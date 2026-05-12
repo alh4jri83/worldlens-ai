@@ -1,7 +1,7 @@
 'use client';
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Sphere, Stars, Float, Text, MeshDistortMaterial, PerspectiveCamera, Html } from '@react-three/drei';
+import { Sphere, Stars, Float, MeshDistortMaterial, PerspectiveCamera, Html } from '@react-three/drei';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as THREE from 'three';
 
@@ -42,7 +42,7 @@ const countriesData = [
 ];
 
 // --- مكون الجسيمات الاستخباراتية (Global Signal Particles) ---
-function IntelligenceParticles({ count = 800 }) {
+function IntelligenceParticles({ count = 400 }) {
     const points = useRef();
     const particles = useMemo(() => {
         const temp = [];
@@ -67,7 +67,7 @@ function IntelligenceParticles({ count = 800 }) {
             dummy.position.set(
                 x + Math.cos((t / 10) * factor) + (Math.sin(t * 1) * factor) / 10,
                 y + Math.sin((t / 10) * factor) + (Math.cos(t * 2) * factor) / 10,
-                z + Math.cos((t / 10) * factor) + (Math.sin(t * 3) * factor) / 10
+                z + (Math.sin(t * 3) * factor) / 20
             );
             dummy.updateMatrix();
             points.current.setMatrixAt(i, dummy.matrix);
@@ -123,7 +123,7 @@ function CountryNode({ position, name, status, color, onSelect, active }) {
                                 {(hovered || active) && (
                                     <motion.div
                                         initial={{ height: 0, opacity: 0 }}
-                                        animate={{ height: 'auto', opacity: 1 }}
+                                        animate={{ height: 'auto', opacity: 1, transition: { ease: "circOut", duration: 0.4 } }}
                                         exit={{ height: 0, opacity: 0 }}
                                         className="w-32 p-2 bg-black/90 border-l border-white/20 backdrop-blur-md overflow-hidden"
                                     >
@@ -155,39 +155,39 @@ function CinematicEarth({ onSelectCountry, selectedCountry }) {
     const earthRef = useRef();
     const atmosphereRef = useRef();
     const { camera } = useThree();
-    const targetCamPos = useRef(new THREE.Vector3(0, 0, 8));
+    const targetCamPos = useRef(new THREE.Vector3(0, 2, 10));
     const targetLookAt = useRef(new THREE.Vector3(0, 0, 0));
 
     useEffect(() => {
         if (selectedCountry) {
             const country = countriesData.find(c => c.name === selectedCountry);
             if (country) {
-                // Cinematic Zoom Logic
-                const pos = new THREE.Vector3(...country.pos).normalize().multiplyScalar(5);
+                const pos = new THREE.Vector3(...country.pos).normalize().multiplyScalar(5.5);
                 targetCamPos.current.copy(pos);
                 targetLookAt.current.set(...country.pos).multiplyScalar(0.5);
             }
         } else {
-            targetCamPos.current.set(0, 0, 8);
+            targetCamPos.current.set(0, 2, 10);
             targetLookAt.current.set(0, 0, 0);
         }
     }, [selectedCountry]);
 
     useFrame(({ clock, mouse }) => {
         const elapsedTime = clock.getElapsedTime();
-        if (earthRef.current) earthRef.current.rotation.y = elapsedTime * 0.05;
-        if (atmosphereRef.current) atmosphereRef.current.rotation.y = elapsedTime * 0.07;
+        // Slower, more majestic rotation
+        if (earthRef.current) earthRef.current.rotation.y = elapsedTime * 0.02;
+        if (atmosphereRef.current) atmosphereRef.current.rotation.y = elapsedTime * 0.03;
 
-        // Smooth Camera Interpolation
-        camera.position.lerp(targetCamPos.current, 0.05);
+        // High-precision smooth damping
+        camera.position.lerp(targetCamPos.current, 0.03);
+
         const currentLookAt = new THREE.Vector3();
-        camera.getWorldDirection(currentLookAt);
+        const lookAtTarget = new THREE.Vector3().lerpVectors(new THREE.Vector3(0, 0, 0), targetLookAt.current, 0.03);
 
-        // Add subtle mouse parallax if no country is selected
-        const parallaxX = !selectedCountry ? mouse.x * 0.5 : 0;
-        const parallaxY = !selectedCountry ? mouse.y * 0.5 : 0;
-
-        camera.lookAt(targetLookAt.current.x + parallaxX, targetLookAt.current.y + parallaxY, targetLookAt.current.z);
+        // Minimal parallax to maintain stability
+        const pX = !selectedCountry ? mouse.x * 0.2 : 0;
+        const pY = !selectedCountry ? mouse.y * 0.2 : 0;
+        camera.lookAt(lookAtTarget.x + pX, lookAtTarget.y + pY, lookAtTarget.z);
     });
 
     return (
@@ -234,8 +234,8 @@ function CinematicEarth({ onSelectCountry, selectedCountry }) {
 const ConsciousnessView = ({ country, onClose }) => {
     return (
         <motion.div
-            initial={{ opacity: 0, x: 100 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0, transition: { type: "spring", damping: 25, stiffness: 100 } }}
             exit={{ opacity: 0, x: 100 }}
             className="absolute inset-y-0 right-0 w-full max-w-xl bg-black/40 backdrop-blur-3xl border-l border-white/10 z-50 p-12 overflow-y-auto"
         >
@@ -256,7 +256,7 @@ const ConsciousnessView = ({ country, onClose }) => {
 
             <div className="grid grid-cols-2 gap-8 mb-12 text-white">
                 {[
-                    { label: "FEAR INDEX", value: "34.2", color: "text-blue-400" },
+                    { label: "FEAR INDEX", value: "34.2", color: "text-cyan-400" },
                     { label: "ECONOMIC PRESSURE", value: "HIGH", color: "text-red-400" },
                     { label: "GLOBAL ATTENTION", value: "98/100", color: "text-cyan-400" },
                     { label: "MEDIA BIAS", value: "POLARIZED", color: "text-orange-400" }
@@ -322,7 +322,7 @@ const BootSequence = ({ onComplete }) => {
     return (
         <motion.div
             initial={{ opacity: 1 }}
-            exit={{ opacity: 0, scale: 1.1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
             transition={{ duration: 1.5, ease: "circOut" }}
             className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center font-mono p-10"
         >
@@ -375,10 +375,10 @@ export default function WorldLensExperience() {
     // تتبع حركة الماوس لإضافة تأثير العمق (Parallax)
     useEffect(() => {
         const handleMouseMove = (e) => {
-            setMousePos({
-                x: (e.clientX / window.innerWidth - 0.5) * 20,
-                y: (e.clientY / window.innerHeight - 0.5) * 20,
-            });
+            // Heavily dampened for UI stability
+            const x = (e.clientX / window.innerWidth - 0.5) * 8;
+            const y = (e.clientY / window.innerHeight - 0.5) * 8;
+            setMousePos({ x, y });
         };
         window.addEventListener('mousemove', handleMouseMove);
         return () => window.removeEventListener('mousemove', handleMouseMove);
@@ -410,9 +410,8 @@ export default function WorldLensExperience() {
                             onSelectCountry={(name) => setSelectedCountry(name)}
                             selectedCountry={selectedCountry}
                         />
-                        {/* تقليل الجسيمات عند الدخول في وعي الدولة للتركيز */}
                         <AnimatePresence>
-                            {!selectedCountry && <IntelligenceParticles count={800} />}
+                            {!selectedCountry && <IntelligenceParticles count={400} />}
                         </AnimatePresence>
                     </group>
                 </Canvas>
