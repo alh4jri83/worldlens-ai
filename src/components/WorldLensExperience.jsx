@@ -7,10 +7,38 @@ import * as THREE from 'three';
 
 // --- بيانات الدول (Intelligence Data) ---
 const countriesData = [
-    { name: "UNITED STATES", pos: [2.2, 1.2, 1.5], color: "#00f2ff", status: "AI ECONOMIC SYNC" },
-    { name: "CHINA", pos: [-2.4, 0.8, -1.2], color: "#ff2d55", status: "TRADE SIGNAL BURST" },
-    { name: "RUSSIA", pos: [-1.2, 2.2, -0.5], color: "#ff8800", status: "KINETIC TENSION HIGH" },
-    { name: "EUROPEAN UNION", pos: [0.5, 2.4, 0.8], color: "#0077ff", status: "POLITICAL FLUIDITY" },
+    {
+        name: "UNITED STATES",
+        pos: [2.2, 1.2, 1.5],
+        color: "#00f2ff",
+        status: "NEURAL SYNC: STABLE",
+        metrics: { mood: "ASSERTIVE", fear: "22%", pressure: "MODERATE", tension: "LOW", influence: "DOMINANT" },
+        narrative: "Technological sovereignty through AI acceleration."
+    },
+    {
+        name: "CHINA",
+        pos: [-2.4, 0.8, -1.2],
+        color: "#ff2d55",
+        status: "TRADE SIGNAL BURST",
+        metrics: { mood: "CALCULATED", fear: "15%", pressure: "HIGH", tension: "MODERATE", influence: "EXPANDING" },
+        narrative: "Global infrastructure dominance via digital silk roads."
+    },
+    {
+        name: "RUSSIA",
+        pos: [-1.2, 2.2, -0.5],
+        color: "#ff8800",
+        status: "KINETIC TENSION HIGH",
+        metrics: { mood: "DEFENSIVE", fear: "68%", pressure: "EXTREME", tension: "CRITICAL", influence: "REGIONAL" },
+        narrative: "Sovereign resource protection and multi-polar alignment."
+    },
+    {
+        name: "EUROPEAN UNION",
+        pos: [0.5, 2.4, 0.8],
+        color: "#0077ff",
+        status: "POLITICAL FLUIDITY",
+        metrics: { mood: "REFLECTIVE", fear: "41%", pressure: "STABLE", tension: "MODERATE", influence: "CULTURAL" },
+        narrative: "Ethical regulation of the emerging digital consciousness."
+    },
 ];
 
 // --- مكون الجسيمات الاستخباراتية (Global Signal Particles) ---
@@ -127,18 +155,39 @@ function CinematicEarth({ onSelectCountry, selectedCountry }) {
     const earthRef = useRef();
     const atmosphereRef = useRef();
     const { camera } = useThree();
+    const targetCamPos = useRef(new THREE.Vector3(0, 0, 8));
+    const targetLookAt = useRef(new THREE.Vector3(0, 0, 0));
+
+    useEffect(() => {
+        if (selectedCountry) {
+            const country = countriesData.find(c => c.name === selectedCountry);
+            if (country) {
+                // Cinematic Zoom Logic
+                const pos = new THREE.Vector3(...country.pos).normalize().multiplyScalar(5);
+                targetCamPos.current.copy(pos);
+                targetLookAt.current.set(...country.pos).multiplyScalar(0.5);
+            }
+        } else {
+            targetCamPos.current.set(0, 0, 8);
+            targetLookAt.current.set(0, 0, 0);
+        }
+    }, [selectedCountry]);
 
     useFrame(({ clock, mouse }) => {
         const elapsedTime = clock.getElapsedTime();
         if (earthRef.current) earthRef.current.rotation.y = elapsedTime * 0.05;
         if (atmosphereRef.current) atmosphereRef.current.rotation.y = elapsedTime * 0.07;
 
-        // تحريك الكاميرا ببطء مع الماوس لزيادة العمق
-        if (!selectedCountry) {
-            camera.position.x = THREE.MathUtils.lerp(camera.position.x, mouse.x * 2, 0.05);
-            camera.position.y = THREE.MathUtils.lerp(camera.position.y, mouse.y * 2, 0.05);
-            camera.lookAt(0, 0, 0);
-        }
+        // Smooth Camera Interpolation
+        camera.position.lerp(targetCamPos.current, 0.05);
+        const currentLookAt = new THREE.Vector3();
+        camera.getWorldDirection(currentLookAt);
+
+        // Add subtle mouse parallax if no country is selected
+        const parallaxX = !selectedCountry ? mouse.x * 0.5 : 0;
+        const parallaxY = !selectedCountry ? mouse.y * 0.5 : 0;
+
+        camera.lookAt(targetLookAt.current.x + parallaxX, targetLookAt.current.y + parallaxY, targetLookAt.current.z);
     });
 
     return (
