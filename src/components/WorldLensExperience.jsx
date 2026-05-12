@@ -84,19 +84,17 @@ function CinematicEarth() {
                 />
             </Sphere>
 
-            {/* نقاط البيانات الساخنة */}
-            {[...Array(15)].map((_, i) => (
-                <Float key={i} speed={2} rotationIntensity={2} floatIntensity={1}>
-                    <mesh position={[
-                        Math.sin(i) * 3,
-                        Math.cos(i) * 2,
-                        Math.sin(i * 2) * 3
-                    ]}>
-                        <sphereGeometry args={[0.04, 16, 16]} />
-                        <meshBasicMaterial color="#ff2d55" />
-                        <pointLight distance={1} intensity={2} color="#ff2d55" />
-                    </mesh>
-                </Float>
+            {/* عصبية الدول التفاعلية */}
+            {countries.map((c, i) => (
+                <CountryNode
+                    key={i}
+                    position={c.pos}
+                    name={c.name}
+                    status={c.status}
+                    color={c.color}
+                    onSelect={onSelectCountry}
+                    active={selectedCountry === c.name}
+                />
             ))}
         </group>
     );
@@ -222,8 +220,14 @@ export default function WorldLensExperience() {
                     <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
 
                     <group scale={isBooted ? 1 : 0.8}>
-                        <CinematicEarth />
-                        <IntelligenceParticles count={800} />
+                        <CinematicEarth
+                            onSelectCountry={(name) => setSelectedCountry(name)}
+                            selectedCountry={selectedCountry}
+                        />
+                        {/* تقليل الجسيمات عند الدخول في وعي الدولة للتركيز */}
+                        <AnimatePresence>
+                            {!selectedCountry && <IntelligenceParticles count={800} />}
+                        </AnimatePresence>
                     </group>
                 </Canvas>
             </div>
